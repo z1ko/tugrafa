@@ -12,7 +12,7 @@ services:
   
   # Container managing the Spark workers 
   spark-master:
-    image: bitnami/spark:latest
+    image: bitnami/spark:3.3
     environment:
       - SPARK_MODE=master
       - SPARK_RPC_AUTHENTICATION_ENABLED=no
@@ -21,12 +21,13 @@ services:
       - SPARK_SSL_ENABLED=no
     ports:
       - 8080:8080
+      - 7077:7077
     networks:
       - tugrafa_net
 
   # Containers that mimic the Spark cluster nodes
   spark-worker:
-    image: bitnami/spark:latest
+    image: bitnami/spark:3.3
     environment:
       - SPARK_MODE=worker
       - SPARK_RPC_AUTHENTICATION_ENABLED=no

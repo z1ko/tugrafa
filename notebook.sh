@@ -8,5 +8,5 @@
 docker run --rm \
     -p 8888:8888 \
     --network=tugrafa_net \
-    -v "${PWD}"/notebook:/home/jovyan \
+    -v "${PWD}"/notebook:/home/jovyan/notebook \
     jupyter/pyspark-notebook
