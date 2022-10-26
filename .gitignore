@@ -1,0 +1,4 @@
+volumes/
+
+notebook/*
+!notebook/analyze.ipynb

@@ -1,0 +1,56 @@
+
+version: '2'
+
+# Network used by the project
+networks:
+  tugrafa_net:
+    name: tugrafa_net
+    driver: bridge
+
+# Mimics a cluster configuration with a spark and cassandra nodes
+services:
+  
+  # Container managing the Spark workers 
+  spark-master:
+    image: bitnami/spark:latest
+    environment:
+      - SPARK_MODE=master
+      - SPARK_RPC_AUTHENTICATION_ENABLED=no
+      - SPARK_RPC_ENCRYPTION_ENABLED=no
+      - SPARK_LOCAL_STORAGE_ENCRYPTION_ENABLED=no
+      - SPARK_SSL_ENABLED=no
+    ports:
+      - 8080:8080
+    networks:
+      - tugrafa_net
+
+  # Containers that mimic the Spark cluster nodes
+  spark-worker:
+    image: bitnami/spark:latest
+    environment:
+      - SPARK_MODE=worker
+      - SPARK_RPC_AUTHENTICATION_ENABLED=no
+      - SPARK_RPC_ENCRYPTION_ENABLED=no
+      - SPARK_LOCAL_STORAGE_ENCRYPTION_ENABLED=no
+      - SPARK_SSL_ENABLED=no
+      - SPARK_MASTER_URL=spark://spark-master:7077
+      - SPARK_WORKER_MEMORY=1G
+      - SPARK_WORKER_CORES=2
+    deploy:
+      mode: replicated
+      replicas: 3
+    networks:
+      - tugrafa_net
+
+  # Container for managing the Cassandra DB
+  #cassandra:
+  #  image: bitnami/cassandra:latest 
+  #  environment:
+  #    - CASSANDRA_CLUSTER_NAME=tugrafa
+  #  ports:
+  #    - 7000:7000
+  #    - 9042:9042
+  #  networks:
+  #    - tugrafa_net
+
+
