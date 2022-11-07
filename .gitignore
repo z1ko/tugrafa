@@ -2,3 +2,4 @@ volumes/
 
 notebook/*
 !notebook/analyze.ipynb
+!notebook/load.ipynb

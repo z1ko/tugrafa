@@ -44,14 +44,14 @@ services:
       - tugrafa_net
 
   # Container for managing the Cassandra DB
-  #cassandra:
-  #  image: bitnami/cassandra:latest 
-  #  environment:
-  #    - CASSANDRA_CLUSTER_NAME=tugrafa
-  #  ports:
-  #    - 7000:7000
-  #    - 9042:9042
-  #  networks:
-  #    - tugrafa_net
-
-
+  cassandra:
+    image: bitnami/cassandra:latest 
+    environment:
+      - CASSANDRA_CLUSTER_NAME=tugrafa
+      - CASSANDRA_USER=tugrafa
+      - CASSANDRA_PASSWORD=tugrafa
+    ports:
+      - 7000:7000
+      - 9042:9042
+    networks:
+      - tugrafa_net
