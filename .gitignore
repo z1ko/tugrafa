@@ -1,5 +1,6 @@
 volumes/
 venv/
+data/
 
 notebook/*
 !notebook/analyze.ipynb
