@@ -1,21 +1,31 @@
 
 from pprint import pprint
-from dotenv import dotenv_values
+#from dotenv import dotenv_values
 
 from pyspark.sql import SparkSession
 
+# TODO: Performance considerations considering the cores count
+session = SparkSession.builder    \
+    .master("local[*]")           \
+    .getOrCreate()
 
-if __name__ == '__main__':
+# Reduce log level
+session.sparkContext.setLogLevel("ERROR")
 
-    config = dotenv_values("config.env")
-    print("Loaded configuration:")
-    pprint(config)
+# ===================================================================
+# Load entire dataset
 
-    session = SparkSession.builder                      \
-        .master(config['TUGRAFA_SPARK_HOST'])           \
-        .appName(config['TUGRAFA_SPARK_APP_NAME'])      \
-        .getOrCreate()
+df = session.read.format("org.apache.spark.sql.cassandra")  \
+    .options(table="swipes", keyspace="tugrafa")            \
+    .load()
 
-    pprint(session)
+# ===================================================================
+# Process dataset
 
+print(f"Size of the dataset: {df.count()}")
 
+print("Number of swipes foreach POI")
+df.groupBy("poi").count().show()
+
+print("Number of swipes foreach card")
+df.groupBy("card_id").count().show()

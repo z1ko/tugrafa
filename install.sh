@@ -50,12 +50,14 @@ fi
 # ========================================================================================
 # Install Spark
 
-SPARK_DOWNLOAD_URL="https://dlcdn.apache.org/spark/spark-3.3.1/spark-3.3.1-bin-hadoop3.tgz"
+pip install pyspark[sql]==3.2.2
+
+SPARK_DOWNLOAD_URL="https://dlcdn.apache.org/spark/spark-3.2.2/spark-3.2.2-bin-without-hadoop.tgz"
 wget SPARK_DOWNLOAD_URL
 
-tar xvf spark-3.3.1-bin-hadoop3.tgz
-sudo mv spark-3.3.1-bin-hadoop3 /opt/spark
-rm spark-3.3.1-bin-hadoop3.tgz
+tar xvf spark-3.2.2-bin-hadoop3.tgz
+sudo mv spark-3.2.2-bin-hadoop3 /opt/spark
+rm spark-3.2.2-bin-hadoop3.tgz
 
 echo "export SPARK_HOME=/opt/spark" >> ~/.profile
 echo "export PATH=$PATH:$SPARK_HOME/bin:$SPARK_HOME/sbin" >> ~/.profile
