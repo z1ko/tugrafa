@@ -50,7 +50,7 @@ fi
 # ========================================================================================
 # Install Spark
 
-pip install pyspark[sql]==3.2.2
+pip install pyspark[sql]==3.2.2 seaborn
 
 SPARK_DOWNLOAD_URL="https://dlcdn.apache.org/spark/spark-3.2.2/spark-3.2.2-bin-without-hadoop.tgz"
 wget $SPARK_DOWNLOAD_URL
