@@ -53,7 +53,7 @@ fi
 pip install pyspark[sql]==3.2.2
 
 SPARK_DOWNLOAD_URL="https://dlcdn.apache.org/spark/spark-3.2.2/spark-3.2.2-bin-without-hadoop.tgz"
-wget SPARK_DOWNLOAD_URL
+wget $SPARK_DOWNLOAD_URL
 
 tar xvf spark-3.2.2-bin-without-hadoop.tgz
 sudo mv spark-3.2.2-bin-without-hadoop /opt/spark
