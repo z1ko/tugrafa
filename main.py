@@ -3,7 +3,6 @@ from pprint import pprint
 #from dotenv import dotenv_values
 
 import matplotlib.pyplot as plt
-import seaborn as sns
 
 from pyspark.sql import SparkSession
 from pyspark.sql.functions import to_date, desc, asc

@@ -24,6 +24,7 @@ if ! grep -q $CASSANDRA_SOURCE_VAL $CASSANDRA_SOURCE_APT; then
     echo $CASSANDRA_SOURCE_VAL | sudo tee -a $CASSANDRA_SOURCE_APT $CASSANDRA_SOURCE_VAL
 fi
 
+echo "CASSANDRA INSTALLATION..."
 sudo apt-get update
 sudo apt-get install cassandra -y
 
@@ -50,14 +51,16 @@ fi
 # ========================================================================================
 # Install Spark
 
+echo "SPARK INSTALLATION..."
+
 pip install pyspark[sql]==3.2.2
 
-SPARK_DOWNLOAD_URL="https://dlcdn.apache.org/spark/spark-3.2.2/spark-3.2.2-bin-without-hadoop.tgz"
+SPARK_DOWNLOAD_URL="https://dlcdn.apache.org/spark/spark-3.2.2/spark-3.2.2-bin-hadoop3.2.tgz"
 wget $SPARK_DOWNLOAD_URL
 
-tar xvf spark-3.2.2-bin-without-hadoop.tgz
-sudo mv spark-3.2.2-bin-without-hadoop /opt/spark
-rm spark-3.2.2-bin-without-hadoop.tgz
+tar xvf spark-3.2.2-bin-hadoop3.2.tgz
+sudo mv spark-3.2.2-bin-hadoop3.2 /opt/spark
+rm spark-3.2.2-bin-hadoop3.2.tgz
 
 echo "export SPARK_HOME=/opt/spark" >> ~/.profile
 echo "export PATH=$PATH:$SPARK_HOME/bin:$SPARK_HOME/sbin" >> ~/.profile
