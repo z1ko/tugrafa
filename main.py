@@ -3,9 +3,13 @@ from pprint import pprint
 #from dotenv import dotenv_values
 
 import matplotlib.pyplot as plt
+from collections import Counter
 
 from pyspark.sql import SparkSession
-from pyspark.sql.functions import to_date, desc, asc
+from pyspark.sql.functions import to_date, desc, asc, collect_list
+
+from graphframes import *
+
 
 # TODO: Performance considerations considering the cores count
 session = SparkSession.builder    \
@@ -36,30 +40,64 @@ df.printSchema()
 # print("Number of swipes foreach card")
 # df.groupBy("card_id").count().show()
 
-# ===================================================================
-# Calcolare l'efficienza di uso della Card, ovvero il numero di PoI al giorno visitati;
-# mostrare l'istogramma del risultato (asse x: numero di PoI; asse y: quantità di Card usate per quel numero di PoI)
+if False:
 
-# Returns a (card_id, date, poi_visited) dataframe
-visited = df                                        \
-    .groupBy("card_id", to_date("datetime")         \
-        .alias("date"))                             \
-    .count()                                        \
-    .withColumnRenamed("count", "poi_visited")      \
-    .sort(desc("card_id"), asc("date"))             \
+    # ===================================================================
+    # Calcolare l'efficienza di uso della Card, ovvero il numero di PoI al giorno visitati;
+    # mostrare l'istogramma del risultato (asse x: numero di PoI; asse y: quantità di Card usate per quel numero di PoI)
 
-visited.show()
+    # Returns a (card_id, date, poi_visited) dataframe
+    visited = df                                        \
+        .groupBy("card_id", to_date("datetime")         \
+            .alias("date"))                             \
+        .count()                                        \
+        .withColumnRenamed("count", "poi_visited")      \
+        .sort(desc("card_id"), asc("date"))             \
 
-# Returns a (date, poi_visited)
-efficency = visited                                 \
-    .groupBy("poi_visited")                         \
-    .count()                                        \
-    .withColumnRenamed("count", "cards_count")      \
-    .sort(asc("poi_visited"))
+    visited.show()
 
-efficency.show()
+    # Returns a (date, poi_visited)
+    efficency = visited                                 \
+        .groupBy("poi_visited")                         \
+        .count()                                        \
+        .withColumnRenamed("count", "cards_count")      \
+        .sort(asc("poi_visited"))
 
-# Show histogram of data
-pdf = efficency.toPandas()
-pdf.plot(x="poi_visited", y="cards_count", xlabel="poi visited", ylabel="cards count", kind="bar")
-plt.show()
+    efficency.show()
+
+    # Show histogram of data
+    pdf = efficency.toPandas()
+    pdf.plot(x="poi_visited", y="cards_count", xlabel="poi visited", ylabel="cards count", kind="bar")
+    plt.show()
+
+if True:
+    # Aggregate by card_id and generate list of visited POIs
+    df2 = df.sort(asc("datetime")) \
+        .groupBy('card_id') \
+        .agg(collect_list("poi"))
+
+    df2.show()
+
+    def pois_to_path2(row):
+        pois = row['collect_list(poi)']
+        return list(zip(pois, pois[1:]))
+
+    # Generate visited pois path
+    paths_rdd = df2.rdd.flatMap(lambda row: pois_to_path2(row))
+    paths_df  = paths_rdd.toDF(["from", "to"])
+
+    paths_df.printSchema()
+    paths_df.show(truncate=False)
+
+    # ["id", "name", "age"]
+
+    edges = paths_df.groupBy("from", "to").count() \
+                    .withColumnRenamed("from", "src") \
+                    .withColumnRenamed("to", "dst")
+    edges.show()
+
+    vertices = df.select("poi").distinct() \
+                .withColumnRenamed("poi", "id")
+    vertices.show()
+
+    graph = GraphFrame(vertices, edges)
