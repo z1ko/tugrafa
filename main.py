@@ -83,22 +83,22 @@ if True:
         return list(zip(pois, pois[1:]))
 
     # Generate visited pois path
-    #paths_rdd = df2.rdd.flatMap(lambda row: pois_to_path2(row))
-    #paths_df  = paths_rdd.toDF(["from", "to"])
+    paths_rdd = df2.rdd.flatMap(lambda row: pois_to_path2(row))
+    paths_df  = paths_rdd.toDF(["from", "to"])
 
-    #paths_df.printSchema()
-    #paths_df.show(truncate=False)
+    paths_df.printSchema()
+    paths_df.show(truncate=False)
 
     # ["id", "name", "age"]
 
-    #edges = paths_df.groupBy("from", "to").count() \
-    #                .withColumnRenamed("from", "src") \
-    #                .withColumnRenamed("to", "dst")
-    #edges.show()
+    edges = paths_df.groupBy("from", "to").count() \
+                    .withColumnRenamed("from", "src") \
+                    .withColumnRenamed("to", "dst")
+    edges.show()
 #
-    #vertices = df.select("poi").distinct() \
-    #            .withColumnRenamed("poi", "id")
-    #vertices.show()
+    vertices = df.select("poi").distinct() \
+                .withColumnRenamed("poi", "id")
+    vertices.show()
 
     # From the paths extract the first POI visited and count how many times it was the first
     first_pois = df2.where(size("collect_list(poi)") > 0).select("card_id", col("collect_list(poi)")[0]) \
@@ -112,4 +112,23 @@ if True:
     first = first_pois.take(1)[0].first_poi
     print(f"Most probable first POI: {first}")
 
-    
+    # Get number of POIs
+    pois_count = df.select(pyf.countDistinct("poi"))
+    print(f"Number of POIs: {pois_count.collect()[0][0]}")
+
+    visited = [ first ]
+    current_poi = first
+    for i in range(0, pois_count):
+        
+        # Find all edges starting from current_poi and select the next probable one
+        new_poi = edges.filter(not col("dst").isin(visited) and col("src") == current_poi) \
+            .agg(pyf.max("count"))
+
+        # Remove all edges that are now superflous
+        edges = edges.filter(col("src") == current_poi or col("dst") == current_poi)
+        
+        # Append to best path
+        visited.append(new_poi)
+        current_poi = new_poi
+
+    print(f"Most probable path is {visited}")
