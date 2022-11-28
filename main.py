@@ -6,6 +6,7 @@ from pprint import pprint
 
 from pyspark.sql import SparkSession
 from pyspark.sql.functions import to_date, desc, asc, collect_list, col, size
+import pyspark.sql.functions as pyf
 
 from graphframes import *
 
@@ -82,11 +83,11 @@ if True:
         return list(zip(pois, pois[1:]))
 
     # Generate visited pois path
-    paths_rdd = df2.rdd.flatMap(lambda row: pois_to_path2(row))
-    paths_df  = paths_rdd.toDF(["from", "to"])
+    #paths_rdd = df2.rdd.flatMap(lambda row: pois_to_path2(row))
+    #paths_df  = paths_rdd.toDF(["from", "to"])
 
-    paths_df.printSchema()
-    paths_df.show(truncate=False)
+    #paths_df.printSchema()
+    #paths_df.show(truncate=False)
 
     # ["id", "name", "age"]
 
@@ -99,9 +100,13 @@ if True:
     #            .withColumnRenamed("poi", "id")
     #vertices.show()
 
-    firsts = df2.where(size("collect_list(poi)") > 0).select("card_id", col("collect_list(poi)")[0]) \
+    # From the paths extract the first POI visited and count how many times it was the first
+    first_pois = df2.where(size("collect_list(poi)") > 0).select("card_id", col("collect_list(poi)")[0]) \
                 .withColumnRenamed("collect_list(poi)[0]", "first_poi") \
-                .groupBy("first_poi").count()
-    firsts.show()
+                .groupBy("first_poi").count() \
+                .sort(desc("count"))
 
+    first_pois.show()
+    first = first_pois.agg(pyf.max("count")).select("first_poi")
+    print(f"Most probable first POI: {first}")
     
