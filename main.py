@@ -2,11 +2,10 @@
 from pprint import pprint
 #from dotenv import dotenv_values
 
-import matplotlib.pyplot as plt
-from collections import Counter
+#import matplotlib.pyplot as plt
 
 from pyspark.sql import SparkSession
-from pyspark.sql.functions import to_date, desc, asc, collect_list
+from pyspark.sql.functions import to_date, desc, asc, collect_list, col, size
 
 from graphframes import *
 
@@ -91,13 +90,18 @@ if True:
 
     # ["id", "name", "age"]
 
-    edges = paths_df.groupBy("from", "to").count() \
-                    .withColumnRenamed("from", "src") \
-                    .withColumnRenamed("to", "dst")
-    edges.show()
+    #edges = paths_df.groupBy("from", "to").count() \
+    #                .withColumnRenamed("from", "src") \
+    #                .withColumnRenamed("to", "dst")
+    #edges.show()
+#
+    #vertices = df.select("poi").distinct() \
+    #            .withColumnRenamed("poi", "id")
+    #vertices.show()
 
-    vertices = df.select("poi").distinct() \
-                .withColumnRenamed("poi", "id")
-    vertices.show()
+    firsts = df2.where(size("collect_list(poi)") > 0).select("card_id", col("collect_list(poi)")[0]) \
+                .withColumnRenamed("collect_list(poi)[0]", "first_poi") \
+                .groupBy("first_poi").count()
+    firsts.show()
 
-    graph = GraphFrame(vertices, edges)
+    
