@@ -8,7 +8,6 @@ from pyspark.sql import SparkSession
 from pyspark.sql.functions import to_date, desc, asc, collect_list, col, size
 import pyspark.sql.functions as pyf
 
-from graphframes import *
 
 
 # TODO: Performance considerations considering the cores count
@@ -94,7 +93,7 @@ if True:
     edges = paths_df.groupBy("from", "to").count() \
                     .withColumnRenamed("from", "src") \
                     .withColumnRenamed("to", "dst")
-    edges.show()
+    edges.show(2000 )
 #
     vertices = df.select("poi").distinct() \
                 .withColumnRenamed("poi", "id")
@@ -113,22 +112,38 @@ if True:
     print(f"Most probable first POI: {first}")
 
     # Get number of POIs
-    pois_count = df.select(pyf.countDistinct("poi"))
-    print(f"Number of POIs: {pois_count.collect()[0][0]}")
+    pois_count = df.select(pyf.countDistinct("poi")).collect()[0][0]
+    print(f"Number of POIs: {pois_count}")
 
     visited = [ first ]
     current_poi = first
-    for i in range(0, pois_count):
+
+    
+    for i in range(0, pois_count-1):
         
+
         # Find all edges starting from current_poi and select the next probable one
-        new_poi = edges.filter(not col("dst").isin(visited) and col("src") == current_poi) \
-            .agg(pyf.max("count"))
+        print(f"Finding the next best POI from {current_poi}...")
+        new_poi = edges.filter((~edges.dst.isin(visited)) & (edges.src == current_poi)) \
+            .sort(desc("count"))
+        
+        print(new_poi.count())
+        
+        new_poi.show()
+
+        next_poi = new_poi.collect()[0].dst
+        print(f"Next best POI is {next_poi}")
 
         # Remove all edges that are now superflous
-        edges = edges.filter(col("src") == current_poi or col("dst") == current_poi)
-        
+        print("Removing edges...")
+        edges = edges.filter(~(edges.src == current_poi) & ~(edges.dst == current_poi))
+        #edges.show()
+
         # Append to best path
-        visited.append(new_poi)
-        current_poi = new_poi
+        visited.append(next_poi)
+        current_poi = next_poi
+
+        if new_poi.count() == 1:
+            break
 
     print(f"Most probable path is {visited}")
