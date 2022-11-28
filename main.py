@@ -106,7 +106,10 @@ if True:
                 .groupBy("first_poi").count() \
                 .sort(desc("count"))
 
+    print("N. of times a POI was the first in the paths:")
     first_pois.show()
-    first = first_pois.agg(pyf.max("count")).select("first_poi")
+
+    first = first_pois.take(1)[0].first_poi
     print(f"Most probable first POI: {first}")
+
     
