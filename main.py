@@ -94,11 +94,15 @@ if True:
     edges = paths_df.groupBy("from", "to").count() \
                     .withColumnRenamed("from", "src") \
                     .withColumnRenamed("to", "dst")
+
     edges.show()
-#
+    edges.write.csv("./data/output/edges.csv")
+
     vertices = df.select("poi").distinct() \
                 .withColumnRenamed("poi", "id")
+
     vertices.show()
+    vertices.write.csv("./data/output/vertices.csv")
 
     # From the paths extract the first POI visited and count how many times it was the first
     first_pois = df2.where(size("collect_list(poi)") > 0).select("card_id", col("collect_list(poi)")[0]) \
@@ -107,7 +111,9 @@ if True:
                 .sort(desc("count"))
 
     print("N. of times a POI was the first in the paths:")
+
     first_pois.show()
+    first_pois.write.csv("./data/output/first.csv")
 
     first = first_pois.take(1)[0].first_poi
     print(f"Most probable first POI: {first}")
