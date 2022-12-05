@@ -3,7 +3,8 @@
 # ========================================================================================
 # Install python and java dependencies
 
-sudo apt-get install python3.8 default-jdk -y
+sudo apt-get update
+sudo apt-get install python3.8 openjdk-11-jdk -y
 python -m pip install --upgrade pip
 
 # ========================================================================================
@@ -21,17 +22,18 @@ fi
 
 if ! grep -q $CASSANDRA_SOURCE_VAL $CASSANDRA_SOURCE_APT; then
     echo "CASSANDRA NOT PRESENT IN APT SOURCES!"
-    echo $CASSANDRA_SOURCE_VAL | sudo tee -a $CASSANDRA_SOURCE_APT $CASSANDRA_SOURCE_VAL
+    echo $CASSANDRA_SOURCE_VAL | sudo tee -a $CASSANDRA_SOURCE_APT
 fi
 
 echo "CASSANDRA INSTALLATION..."
+
 sudo apt-get update
 sudo apt-get install cassandra -y
 
 # ========================================================================================
 # Create Cassandra service
 
-sudo cp ./config/cassandra/cassandra.yml /etc/cassandra/cassandra.yml
+# sudo cp ./config/cassandra/cassandra.yml /etc/cassandra/cassandra.yml
 
 sudo systemctl enable cassandra
 sudo systemctl start  cassandra
@@ -39,12 +41,12 @@ sudo systemctl start  cassandra
 # ========================================================================================
 # Setup keyspace and tables and load CSV data
 
-if cqlsh -f ./config/cassandra/setup.cql; then
-    echo "CASSANDRA SETUP COMPLETE!"
-else
-    echo "CASSANDRA SETUP FAILED!"
-    exit 1
-fi
+#if cqlsh -f ./config/cassandra/setup.cql; then
+#    echo "CASSANDRA SETUP COMPLETE!"
+#else
+#    echo "CASSANDRA SETUP FAILED!"
+#    exit 1
+#fi
 
 #cqlsh -f ./config/cassandra/load.cql
 
