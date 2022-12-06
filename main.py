@@ -260,4 +260,29 @@ if False:
         
 
     print(f"Most probable path is {visited}")
-    
+    difference = []
+    for row in df2.rdd.collect():
+        perfect = True
+        card_id, path = row
+        
+        for i in range(0, len(path)-1):
+            poi = path[i]
+            if poi != visited[i]:
+                time = df.filter((df.card_id == card_id ) & (df.poi == poi)).select("datetime")
+                arrived_poi = (time.first()["datetime"])
+                prima = arrived_poi - timedelta(hours=0, minutes=30, seconds=0)
+                dopo = arrived_poi + timedelta(hours=0, minutes=30, seconds=0)
+                
+                people_perfect = df.filter((df.datetime >= prima) & (df.datetime <= dopo) & (df.poi == visited[i])).count()
+                people_poi = df.filter((df.datetime >= prima) & (df.datetime <= dopo) & (df.poi == poi)).count()
+                
+                print(f"{card_id}: Nel poi scelto({poi}) sono presenti {people_poi} persone mentre nel perfect ({visited[i]}) sono presenti {people_perfect}")
+                difference.append(people_perfect-people_poi)
+                perfect = False
+                break
+
+        if perfect:
+            print(f"{card_id}: Path uguale a quello ottimo")
+
+    print("Tutte le difference (people_perfect-people_poi):") 
+    print(difference)   
