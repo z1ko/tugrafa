@@ -4,6 +4,9 @@ import pandas as pd
 import pyvis as pv
 import math
 
+BEST_PATH = ['Arena', 'Casa Giulietta', 'Torre Lamberti', 'Palazzo della Ragione', 'Santa Anastasia', 'Duomo', 'Teatro Romano', 'Castelvecchio', 'San Zeno', 'San Fermo', 'Tomba Giulietta', 'Museo Storia', 'Giardino Giusti', 'Museo Lapidario', 'Museo Radio', 'Centro Fotografia', 'AMO', 'Sighseeing', 'Verona Tour']
+print(len(BEST_PATH))
+
 edges = pd.read_csv("./data/output/edges.csv/part-00000-5e798aa6-7ff3-47cf-ad40-63e5b9dfbc02-c000.csv", header=None)
 first = pd.read_csv("./data/output/first.csv/part-00000-592e54df-01a1-475f-bb40-626e5c2f1ae4-c000.csv", header=None)
 
@@ -23,6 +26,9 @@ for (poi, cnt) in first.itertuples(index=False):
     print(f"Node({poi})")
     nt.add_node(current_idx, label=poi, size=math.log2(cnt))
 
+# all edges in the best path
+best_edges = set(zip(BEST_PATH, BEST_PATH[1:]))
+
 # edges = [(src, dst, { "path_count": cnt }) for (src, dst, cnt) in edges.itertuples(index=False) if cnt > 1000]
 for (src, dst, cnt) in edges.itertuples(index=False):
 
@@ -36,11 +42,16 @@ for (src, dst, cnt) in edges.itertuples(index=False):
         nt.add_node(nodes_idx, label=dst, size=1)
         nodes_idx += 1
 
-    to_hide = False
-    if cnt < 5000:
-        to_hide = True
+    to_hide = True
+    color = "gray"
 
-    nt.add_edge(nodes_map[src], nodes_map[dst], value=cnt, hidden=to_hide, arrowStrikethrough=False)
+    #if cnt < 5000:
+
+    if (src, dst) in best_edges:
+        to_hide = False
+        color = "red"
+
+    nt.add_edge(nodes_map[src], nodes_map[dst], value=cnt, hidden=to_hide, arrowStrikethrough=False, color=color)
 
 
 #nt.toggle_physics(False)

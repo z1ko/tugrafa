@@ -2,6 +2,3 @@
 
 # Cluster name, used to distinguish between instances in the same machine
 cluster_name: "Tugrafa Cluster"
-
-# Port used to connect to the database
-storage_port: 7000

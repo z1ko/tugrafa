@@ -4,10 +4,25 @@ from pprint import pprint
 
 #import matplotlib.pyplot as plt
 
+import numpy as np
+from pyspark import RDD
 from pyspark.sql import SparkSession
 from pyspark.sql.functions import to_date, desc, asc, collect_list, col, size
+from pyspark.sql.types import IntegerType
+#from pyspark.ml.clustering import KMeans
+#from pyspark.ml.evaluation import ClusteringEvaluator
+#from pyspark.ml.feature import VectorAssembler
+
+from pyspark_kmodes import *
 import pyspark.sql.functions as pyf
 
+import path
+
+def nonemax(a, b):
+    if (b is None):
+        return a
+    else:
+        return max(a, b)
 
 
 # TODO: Performance considerations considering the cores count
@@ -17,6 +32,7 @@ session = SparkSession.builder    \
 
 # Reduce log level
 session.sparkContext.setLogLevel("ERROR")
+session.sparkContext.addPyFile("pyspark_kmodes.py")
 
 # ===================================================================
 # Load entire dataset
@@ -28,6 +44,14 @@ df = session.read.format("org.apache.spark.sql.cassandra")  \
 print("Data schema:")
 df.printSchema()
 
+# Find all known POIs (vertices)
+pois = df.rdd.map(lambda r: r[2]).distinct()
+
+# Find all possible edges with the initial count of zero
+edges = pois.cartesian(pois)
+edges = edges.map(lambda r: ((r[0], r[1]), 0))
+#print(edges.take(10))
+
 # ===================================================================
 # Process dataset
 
@@ -38,6 +62,22 @@ df.printSchema()
 # 
 # print("Number of swipes foreach card")
 # df.groupBy("card_id").count().show()
+
+"""
+edges = session.sparkContext.parallelize([
+    ("Arena", "Porto Tolle", 4205),
+    ("Arena", "Duomo", 291),
+    ("Arena", "Torre Lamberti", 954),
+    ("Duomo", "Torre Ridolfi", 524),
+    ("Porto Tolle", "Duomo", 2345)
+])
+
+cur_node  = "Arena"
+cur_edges = edges
+while True:
+    cur_node, cur_edges = path.find_best_exit(cur_node, cur_edges)
+    print(cur_edges.collect())
+"""
 
 if False:
 
@@ -77,6 +117,60 @@ if True:
 
     df2.show()
 
+    # ===================================================================
+    # Generate One-Hot Encoding of the visited pois, 
+    # this increases the spatial dimension of the data a lot
+    
+    pois_list = pois.collect()
+
+    onehot = df2
+    for poi_name in pois_list:
+        print(f"Adding boolean-integer value for poi: {poi_name}")
+        onehot = onehot.withColumn(poi_name, pyf.array_contains("collect_list(poi)", poi_name))
+        onehot = onehot.withColumn(poi_name, col(poi_name).cast(IntegerType()))
+
+    print("DataFrame with On-Hot encoding of the visited pois:")
+    onehot = onehot.drop("collect_list(poi)").select(pois_list)
+    onehot.show()
+
+    kmode_eva = EnsembleKModes(3, 10)
+    kmode_fit = kmode_eva.fit(onehot.rdd)
+
+    # Visualizza i principali subset di pois visitati
+    for (idx, cluster) in enumerate(kmode_fit.clusters):
+        print(f"Cluster {idx} = [ ", end="")
+        for (poi, present) in zip(pois_list, cluster):
+            if bool(present) == 1:
+                print(poi, end=" ")
+        print("]")
+
+    result = [0] * len(pois_list)
+    for cluster in kmode_fit.clusters:
+        result = [x + y for x, y in zip(result, cluster)]
+
+    # ==========================================================
+    # Controlla che i clusters siano separati
+    
+    separated = True
+    for value in result:
+        if value > 1:
+            separated = False
+            break
+
+    print(f"Clusters are separated: {separated}")
+
+    # ==========================================================
+    # Controlla che i clusters comprendano tutti i poi
+
+    complete = True
+    for value in result:
+        if value == 0:
+            complete = False
+            break
+
+    print(f"Clusters are complete: {complete}")
+
+if False:
     def pois_to_path2(row):
         pois = row['collect_list(poi)']
         return list(zip(pois, pois[1:]))
@@ -88,18 +182,24 @@ if True:
     paths_df.printSchema()
     paths_df.show(truncate=False)
 
+if False:
+
     # ["id", "name", "age"]
+    edges_count = paths_df.groupBy("from", "to").count() \
+        .withColumnRenamed("from", "src") \
+        .withColumnRenamed("to", "dst")
+    
+    # Map items in the form ((src, dst), cnt)
+    edges_count = edges_count.rdd.map(lambda r: ((r[0], r[1]), r[2]))
+    # Join with the complete graph's edges and keep the max
+    edges = edges.leftOuterJoin(edges_count) \
+        .map(lambda r: (r[0], nonemax(r[1][0], r[1][1])))
 
-    edges = paths_df.groupBy("from", "to").count() \
-                    .withColumnRenamed("from", "src") \
-                    .withColumnRenamed("to", "dst")
-    edges.show(2000 )
-#
-    vertices = df.select("poi").distinct() \
-                .withColumnRenamed("poi", "id")
+    #pprint(edges.collect())
+    #exit(1)
 
-    vertices.show()
-    vertices.write.csv("./data/output/vertices.csv")
+    edges_df = edges.map(lambda r: (r[0][0], r[0][1], r[1])).toDF(["src", "dst", "cnt"])
+    edges_df.write.csv("./data/output/edges")
 
     # From the paths extract the first POI visited and count how many times it was the first
     first_pois = df2.where(size("collect_list(poi)") > 0).select("card_id", col("collect_list(poi)")[0]) \
@@ -110,44 +210,54 @@ if True:
     print("N. of times a POI was the first in the paths:")
 
     first_pois.show()
-    first_pois.write.csv("./data/output/first.csv")
+    first_pois.write.csv("./data/output/first")
 
     first = first_pois.take(1)[0].first_poi
     print(f"Most probable first POI: {first}")
 
     # Get number of POIs
-    pois_count = df.select(pyf.countDistinct("poi")).collect()[0][0]
+    pois_count = len(pois.collect())
     print(f"Number of POIs: {pois_count}")
 
+    # edges count should be pois * pois
+    assert(len(edges.collect()) == pois_count * pois_count)
+
     visited = [ first ]
-    current_poi = first
 
-    
-    for i in range(0, pois_count-1):
+    current_src = first
+
+    # Remove all edges goint to the first poi
+    edges = edges.filter(lambda r: r[0][1] != first)
+
+    # Find the next best node from the current
+    for i in range(0, pois_count - 1):
+        next_src, edges = path.find_best_exit(current_src, edges)
+        visited.append(next_src)
+        current_src = next_src
+
+    #for i in range(0, pois_count-1):
+    #    
+    #    # Find all edges starting from current_poi and select the next probable one
+    #    print(f"Finding the next best POI from {current_poi}...")
+    #    new_poi = edges.filter((~edges.dst.isin(visited)) & (edges.src == current_poi)) \
+    #        .sort(desc("count"))
+    #    
+    #    print(new_poi.count())
+    #    if new_poi.count() == 0:    
+    #        break
+    #
+    #    next_poi = new_poi.collect()[0].dst
+    #    print(f"Next best POI is {next_poi}")
+    #
+    #    # Remove all edges that are now superflous
+    #    print("Removing edges...")
+    #    edges = edges.filter(~(edges.src == current_poi) & ~(edges.dst == current_poi))
+    #    #edges.show()
+    #
+    #    # Append to best path
+    #    visited.append(next_poi)
+    #    current_poi = next_poi
         
-
-        # Find all edges starting from current_poi and select the next probable one
-        print(f"Finding the next best POI from {current_poi}...")
-        new_poi = edges.filter((~edges.dst.isin(visited)) & (edges.src == current_poi)) \
-            .sort(desc("count"))
-        
-        print(new_poi.count())
-        
-        new_poi.show()
-
-        next_poi = new_poi.collect()[0].dst
-        print(f"Next best POI is {next_poi}")
-
-        # Remove all edges that are now superflous
-        print("Removing edges...")
-        edges = edges.filter(~(edges.src == current_poi) & ~(edges.dst == current_poi))
-        #edges.show()
-
-        # Append to best path
-        visited.append(next_poi)
-        current_poi = next_poi
-
-        if new_poi.count() == 1:
-            break
 
     print(f"Most probable path is {visited}")
+    
