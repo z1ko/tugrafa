@@ -18,6 +18,7 @@ from pyspark_kmodes import *
 import pyspark.sql.functions as pyf
 
 import path
+import deviation
 
 def nonemax(a, b):
     if (b is None):
@@ -52,6 +53,9 @@ pois = df.rdd.map(lambda r: r[2]).distinct()
 edges = pois.cartesian(pois)
 edges = edges.map(lambda r: ((r[0], r[1]), 0))
 #print(edges.take(10))
+
+deviation.calculate(df)
+exit(0)
 
 # ===================================================================
 # Process dataset
@@ -135,8 +139,9 @@ if False:
     onehot = onehot.drop("collect_list(poi)").select(pois_list)
     onehot.show()
 
-    kmode_eva = EnsembleKModes(3, 10)
+    kmode_eva = EnsembleKModes(n_clusters=3, max_dist_iter=10, local_kmodes_iter=10)
     kmode_fit = kmode_eva.fit(onehot.rdd)
+
 
     # Visualizza i principali subset di pois visitati
     for (idx, cluster) in enumerate(kmode_fit.clusters):
@@ -271,6 +276,7 @@ if True:
     visited.insert(len(visited), "end")
 
     print(visited)
+
 
     data = []
     # 
