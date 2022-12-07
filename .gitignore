@@ -5,3 +5,4 @@ data/
 notebook/*
 !notebook/analyze.ipynb
 !notebook/load.ipynb
+./launch.sh

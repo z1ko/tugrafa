@@ -2,7 +2,7 @@
 from pprint import pprint
 #from dotenv import dotenv_values
 
-#import matplotlib.pyplot as plt
+import matplotlib.pyplot as plt
 
 import numpy as np
 from pyspark import RDD
@@ -12,6 +12,7 @@ from pyspark.sql.types import IntegerType
 #from pyspark.ml.clustering import KMeans
 #from pyspark.ml.evaluation import ClusteringEvaluator
 #from pyspark.ml.feature import VectorAssembler
+from datetime import timedelta
 
 from pyspark_kmodes import *
 import pyspark.sql.functions as pyf
@@ -115,8 +116,9 @@ if True:
         .groupBy('card_id') \
         .agg(collect_list("poi"))
 
-    df2.show()
+    df2.show(truncate=False)
 
+if False:
     # ===================================================================
     # Generate One-Hot Encoding of the visited pois, 
     # this increases the spatial dimension of the data a lot
@@ -170,7 +172,7 @@ if True:
 
     print(f"Clusters are complete: {complete}")
 
-if False:
+if True:
     def pois_to_path2(row):
         pois = row['collect_list(poi)']
         return list(zip(pois, pois[1:]))
@@ -182,7 +184,7 @@ if False:
     paths_df.printSchema()
     paths_df.show(truncate=False)
 
-if False:
+if True:
 
     # ["id", "name", "age"]
     edges_count = paths_df.groupBy("from", "to").count() \
@@ -260,29 +262,56 @@ if False:
         
 
     print(f"Most probable path is {visited}")
-    difference = []
+
+
+if True:
+    #visited = ["Santa Anastasia", "Casa Giulietta", "Torre Lamberti",  "Castelvecchio"]
+    #paths = [["049D67523F3880", ["Santa Anastasia", "Casa Giulietta", "Castelvecchio"]]]
+    visited.insert(0, "start")
+    visited.insert(len(visited), "end")
+
+    print(visited)
+
+    data = []
+    # 
     for row in df2.rdd.collect():
+        print("---------------------------------------------------------------------")
         perfect = True
+        deviation = False
         card_id, path = row
+        path.insert(0, "start")
+        path.insert(len(path), "end")
         
-        for i in range(0, len(path)-1):
+        for i in range(1, len(path)-1) :
             poi = path[i]
-            if poi != visited[i]:
-                time = df.filter((df.card_id == card_id ) & (df.poi == poi)).select("datetime")
-                arrived_poi = (time.first()["datetime"])
-                prima = arrived_poi - timedelta(hours=0, minutes=30, seconds=0)
-                dopo = arrived_poi + timedelta(hours=0, minutes=30, seconds=0)
-                
-                people_perfect = df.filter((df.datetime >= prima) & (df.datetime <= dopo) & (df.poi == visited[i])).count()
-                people_poi = df.filter((df.datetime >= prima) & (df.datetime <= dopo) & (df.poi == poi)).count()
-                
-                print(f"{card_id}: Nel poi scelto({poi}) sono presenti {people_poi} persone mentre nel perfect ({visited[i]}) sono presenti {people_perfect}")
-                difference.append(people_perfect-people_poi)
-                perfect = False
-                break
+            optimal_node = visited[i]
+            if not deviation:
+                if poi != optimal_node:
+                    time = df.filter((df.card_id == card_id ) & (df.poi == poi)).select("datetime")
+                    arrived_poi = (time.first()["datetime"])
+                    prima = arrived_poi - timedelta(hours=0, minutes=30, seconds=0)
+                    dopo = arrived_poi + timedelta(hours=0, minutes=30, seconds=0)
+                    
+                    people_perfect = df.filter((df.datetime >= prima) & (df.datetime <= dopo) & (df.poi == optimal_node)).count()
+                    people_poi = df.filter((df.datetime >= prima) & (df.datetime <= dopo) & (df.poi == poi)).count()
+                    
+                    print(f"{card_id}: Nel poi scelto({poi}) sono presenti {people_poi} persone mentre nel perfect ({optimal_node}) sono presenti {people_perfect}")
+                    data.append((path[i-1], path[i], arrived_poi.strftime("%H:%M:%S"), people_perfect-people_poi))
+                    perfect = False
+                    deviation = True
+                else:
+                    print("Node Same")
 
         if perfect:
             print(f"{card_id}: Path uguale a quello ottimo")
+            print(path)
+        
 
-    print("Tutte le difference (people_perfect-people_poi):") 
-    print(difference)   
+    print("Tutte le difference (people_perfect-people_poi):")
+    
+    print(data)
+    columns = ['from', 'dest', 'time', 'Difference']
+   
+    deviations = session.createDataFrame(data, columns)
+    deviations.show()
+    deviations.write.csv("./data/output/deviations")
