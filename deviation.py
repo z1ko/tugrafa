@@ -112,7 +112,9 @@ def calculate(df):
     joined = joined.withColumn("delta", joined.original_count - joined.deviation_count)
     joined.show()
 
-
+    joined = joined.withColumn("hour",  pyf.date_format(joined.deviation_timeslot, 'HH:mm:ss')) \
+        .groupBy("deviation_original", "deviation_timeslot") \
+        .agg(pyf.sum("deviation_count")).show()
 
 
 
