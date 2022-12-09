@@ -50,22 +50,3 @@ sudo systemctl start  cassandra
 
 #cqlsh -f ./config/cassandra/load.cql
 
-# ========================================================================================
-# Install Spark
-
-echo "SPARK INSTALLATION..."
-
-pip install pyspark[sql]==3.2.2
-
-SPARK_DOWNLOAD_URL="https://dlcdn.apache.org/spark/spark-3.2.3/spark-3.2.3-bin-hadoop3.2.tgz"
-wget $SPARK_DOWNLOAD_URL
-
-tar xvf spark-3.2.3-bin-hadoop3.2.tgz
-sudo mv spark-3.2.3-bin-hadoop3.2 /opt/spark
-rm spark-3.2.3-bin-hadoop3.2.tgz
-
-echo "export SPARK_HOME=/opt/spark" >> ~/.profile
-echo "export PATH=$PATH:$SPARK_HOME/bin:$SPARK_HOME/sbin" >> ~/.profile
-echo "export PYSPARK_PYTHON=/usr/bin/python3" >> ~/.profile
-
-source ~/.profile

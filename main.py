@@ -9,9 +9,6 @@ from pyspark import RDD
 from pyspark.sql import SparkSession
 from pyspark.sql.functions import to_date, desc, asc, collect_list, col, size
 from pyspark.sql.types import IntegerType
-#from pyspark.ml.clustering import KMeans
-#from pyspark.ml.evaluation import ClusteringEvaluator
-#from pyspark.ml.feature import VectorAssembler
 from datetime import timedelta
 
 from pyspark_kmodes import *
