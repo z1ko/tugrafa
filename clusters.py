@@ -25,8 +25,7 @@ def calculate(df: DataFrame):
                 pyf.array_contains("pois", poi_name).cast(pyt.IntegerType()))
     
     visited = visited.drop("pois")
-    if show_result:
-        visited.select(pois_list).show()
+    visited.select(pois_list).show()
 
     # Uses the KModes method to generate 3 subsets of pois with the lowest hamming distance
     kmodes = EnsembleKModes(n_clusters=3, max_dist_iter=10, local_kmodes_iter=10)
