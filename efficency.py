@@ -6,11 +6,11 @@ import pyspark.sql.functions as pyf
 import pyspark.sql.types as pyt
 import matplotlib.pyplot as plt
 
-# Main functions used for queries
-def calculate(df: DataFrame, show_result:bool = False, show_histogram: bool = False):
-
-    # Calcolare l'efficienza d'uso della card, ovvero il numero di POI al giorno visitati,
-    # mostrare l'istogramma del risultato (x: numero di POI, y: quantita di cards per quel numero di POI)
+def calculate(df: DataFrame, show_histogram: bool = False):
+    """
+    Calcolare l'efficienza d'uso della card, ovvero il numero di POI al giorno visitati,
+    mostrare l'istogramma del risultato (x: numero di POI, y: quantita di cards per quel numero di POI)
+    """
 
     visited = df.groupBy("card_id", pyf.to_date("datetime").alias("date")).count() \
             .withColumnRenamed("count", "visited_pois_count") \
@@ -21,9 +21,7 @@ def calculate(df: DataFrame, show_result:bool = False, show_histogram: bool = Fa
             .withColumnRenamed("count", "cards_count") \
             .sort(pyf.asc("visited_pois_count"))
 
-    # Show collected result
-    if show_result:
-        efficency.show()
+    efficency.show()
 
     # Show histogram of data
     if show_histogram:
