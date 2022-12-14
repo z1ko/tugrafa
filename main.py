@@ -16,6 +16,7 @@ import pyspark.sql.functions as pyf
 
 import path
 import deviation
+import bestpath
 
 def nonemax(a, b):
     if (b is None):
@@ -51,8 +52,11 @@ edges = pois.cartesian(pois)
 edges = edges.map(lambda r: ((r[0], r[1]), 0))
 #print(edges.take(10))
 
-deviation.calculate(df)
-exit(0)
+
+bestpath.calculate(df);
+
+#deviation.calculate(df)
+#exit(0)
 
 # ===================================================================
 # Process dataset
@@ -119,7 +123,7 @@ if True:
 
     df2.show(truncate=False)
 
-if False:
+if True:
     # ===================================================================
     # Generate One-Hot Encoding of the visited pois, 
     # this increases the spatial dimension of the data a lot

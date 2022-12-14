@@ -4,7 +4,7 @@ import pandas as pd
 import pyvis as pv
 import math
 
-BEST_PATH = ['Arena', 'Casa Giulietta', 'Torre Lamberti', 'Palazzo della Ragione', 'Santa Anastasia', 'Duomo', 'Teatro Romano', 'Castelvecchio', 'San Zeno', 'San Fermo', 'Tomba Giulietta', 'Museo Storia', 'Giardino Giusti', 'Museo Lapidario', 'Museo Radio', 'Centro Fotografia', 'AMO', 'Sighseeing', 'Verona Tour']
+BEST_PATH = ['Arena', 'Casa Giulietta', 'Torre Lamberti', 'Palazzo della Ragione', 'Santa Anastasia', 'Duomo', 'Teatro Romano', 'Castelvecchio', 'San Zeno', 'San Fermo', 'Tomba Giulietta', 'Museo Storia', 'Giardino Giusti', 'Museo Lapidario', 'Museo Radio', 'Centro Fotografia', 'AMO', 'Sighseeing', 'Verona Tour', 'Museo Miniscalchi', 'Museo Conte', 'Museo Africano']
 print(len(BEST_PATH))
 
 edges = pd.read_csv("./data/output/edges.csv/part-00000-5e798aa6-7ff3-47cf-ad40-63e5b9dfbc02-c000.csv", header=None)
@@ -30,7 +30,7 @@ for (poi, cnt) in first.itertuples(index=False):
 best_edges = set(zip(BEST_PATH, BEST_PATH[1:]))
 
 # edges = [(src, dst, { "path_count": cnt }) for (src, dst, cnt) in edges.itertuples(index=False) if cnt > 1000]
-for (src, dst, cnt) in edges.itertuples(index=False):
+for (src, dst) in best_edges:
 
     if src not in nodes_map:
         nodes_map[src] = nodes_idx

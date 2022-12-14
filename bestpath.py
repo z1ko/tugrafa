@@ -1,12 +1,14 @@
-from pyspark import DataFrame
+from pyspark.sql import DataFrame
 
 import pyspark.sql.functions as pyf
 import pyspark.sql.types as pyt
+
+import operator
 import path
 
 # Generate all directed edges from a path
-@pyf.udf(returnType=pyt.ArrayType(pyt.StringType()))
-def path_to_edges(path):
+def path_to_edges(row):
+    card_id, path = row
     return list(zip(path, path[1:]))
 
 
@@ -27,29 +29,32 @@ def calculate(df: DataFrame):
     visited = df.sort(pyf.asc("datetime")).groupBy("card_id") \
             .agg(pyf.collect_list("poi").alias("pois"))
 
+    visited.show()
+
     # Extract the best starting POI based on the number of times it was the first in a path
     best_first_poi = visited.where(pyf.size("pois") > 0) \
             .select("card_id", pyf.col("pois")[0]) \
             .withColumnRenamed("pois[0]", "first_poi") \
             .groupBy("first_poi").count() \
-            .sort(pyf.desc("count")) \
-            .take(1)[0].first_poi
+            .sort(pyf.desc("count"))
 
+    best_first_poi.show()
+    best_first_poi = best_first_poi.take(1)[0].first_poi
     print(f"Best first POI: {best_first_poi}")
     
     # Find all possible edges with the initial count of zero ((from, to), 0)
     edges_count = pois.cartesian(pois).map(lambda r: ((r[0], r[1]), 0))
 
     # Generate all edges from the visited dataframe ((from, to), cnt)
-    visited_edges_count = visited.rdd.flatMap(path_to_edges("pois")) \
+    visited_edges_count = visited.rdd.flatMap(lambda row: path_to_edges(row)) \
             .map(lambda r: ((r[0], r[1]), 1)) \
-            .reduceByKey(add)
+            .reduceByKey(operator.add)
 
     # Generate complete graph of edges with count
     edges_count = edges_count.leftOuterJoin(visited_edges_count) \
-            .map(lambda r: (r[0], nonemax(r[1][0], r[1][1]))) \
-            .map(lambda r: (r[0][0], r[0][1], r[1])) \
-            .toDF(["from", "to", "count"])
+            .map(lambda r: (r[0], nonemax(r[1][0], r[1][1]))) #\
+            #.map(lambda r: (r[0][0], r[0][1], r[1])) \
+            #.toDF(["from", "to", "count"])
 
     pois_count = len(pois_list)
     assert(len(edges_count.collect()) == pois_count * pois_count)

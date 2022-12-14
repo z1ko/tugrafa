@@ -24,7 +24,10 @@ BEST_PATH = [
     'Centro Fotografia', 
     'AMO', 
     'Sighseeing', 
-    'Verona Tour',
+    'Verona Tour', 
+    'Museo Miniscalchi', 
+    'Museo Conte', 
+    'Museo Africano', 
     'END'
 ]
 
