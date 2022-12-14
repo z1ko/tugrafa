@@ -1,8 +1,7 @@
-volumes/
-venv/
-data/
 
-notebook/*
-!notebook/analyze.ipynb
-!notebook/load.ipynb
+__pycache__
+.vscode
+venv/
+
+data/
 ./launch.sh
